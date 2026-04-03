@@ -1,0 +1,180 @@
+services:
+  # Модуль А (sudo docker rm clickhouse)
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8
+    container_name: clickhouse
+    ports:
+        - "8123:8123"
+        - "9000:9000"
+    environment:
+        CLICKHOUSE_USER: default
+        CLICKHOUSE_PASSWORD: ""
+        CLICKHOUSE_DB: default
+    volumes:
+        - ./users.xml:/etc/clickhouse-server/users.d/users.xml:ro
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9001:9000"   
+      - "9002:9001"   
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - monitoring
+    restart: unless-stopped
+  # Модуль Д
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    networks:
+      - monitoring
+    restart: unless-stopped
+  # Модуль А
+  psql:
+    image: 'postgres:15'
+    container_name: psql
+    environment:
+      - 'POSTGRES_USER=user'
+      - 'POSTGRES_PASSWORD=0000'
+      - 'POSTGRES_DB=db'
+    volumes:
+      - './psql-data/:/var/lib/postgresql'
+      - './init_db:/docker-entrypoint-initdb.d'
+    ports:
+      - '5432:5432'
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - 'PGADMIN_DEFAULT_EMAIL=user@localhost.org'
+      - 'PGADMIN_DEFAULT_PASSWORD=0000'
+    ports:
+      - '80:80'
+    depends_on:
+      - psql
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  prometheus:
+    image: ubuntu/prometheus:2-24.04_stable
+    container_name: prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+# Модуль Г 
+  postgres_airflow:
+    image: postgres:15
+    container_name: postgres_airflow
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - ./module_G/airflow-postgres-data:/var/lib/postgresql/data
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  airflow-webserver:
+    image: apache/airflow:2.7.3
+    container_name: airflow-webserver
+    depends_on:
+      - postgres_airflow
+      - redis
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres_airflow/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres_airflow/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: 81HqQLtbZ8H4Zq8KjQxZxU7xVQvFqQvFqQvFqQvFqQ=
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+    volumes:
+      - ./module_G/dags:/opt/airflow/dags
+      - ./module_G/logs:/opt/airflow/logs
+      - ./module_G/plugins:/opt/airflow/plugins
+      - ./module_G/data:/opt/airflow/data
+    ports:
+      - "8080:8080"
+    command: webserver
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  airflow-scheduler:
+    image: apache/airflow:2.7.3
+    container_name: airflow-scheduler
+    depends_on:
+      - postgres_airflow
+      - redis
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres_airflow/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres_airflow/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: 81HqQLtbZ8H4Zq8KjQxZxU7xVQvFqQvFqQvFqQvFqQ=
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    volumes:
+      - ./module_G/dags:/opt/airflow/dags
+      - ./module_G/logs:/opt/airflow/logs
+      - ./module_G/plugins:/opt/airflow/plugins
+      - ./module_G/data:/opt/airflow/data
+    command: scheduler
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  airflow-worker:
+    image: apache/airflow:2.7.3
+    container_name: airflow-worker
+    depends_on:
+      - postgres_airflow
+      - redis
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres_airflow/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres_airflow/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: 81HqQLtbZ8H4Zq8KjQxZxU7xVQvFqQvFqQvFqQvFqQ=
+    volumes:
+      - ./module_G/dags:/opt/airflow/dags
+      - ./module_G/logs:/opt/airflow/logs
+      - ./module_G/plugins:/opt/airflow/plugins
+      - ./module_G/data:/opt/airflow/data
+    command: celery worker
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+volumes:
+  clickhouse_data:
+  minio_data:
+
+networks:
+  monitoring:
+    driver: bridge

@@ -1,0 +1,43 @@
+<mxfile host="app.diagrams.net" modified="2024-01-01T00:00:00.000Z" agent="5.0" etag="" version="20.8.10" type="device">
+  <diagram id="medallion" name="Medallion Layers">
+    <mxGraphModel dx="800" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="b" value="Bronze Layer&#xa;Сырые данные&#xa;(MinIO + Parquet)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="100" y="40" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="s" value="Silver Layer&#xa;Очищенные, исторические (SCD2)&#xa;(ClickHouse)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="100" y="180" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="g" value="Gold Layer&#xa;Агрегированные витрины&#xa;(ClickHouse)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="100" y="320" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell value="ETL / dbt" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b" target="s">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell value="Трансформации / агрегация" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="s" target="g">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell value="Spark Streaming (поток)" style="edgeStyle=none;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="b" target="b2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="b2" value="Источники:&#xa;камеры, погода, ДТП" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="400" y="55" width="140" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell value="Airflow" style="edgeStyle=none;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s" target="airflow">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="airflow" value="Airflow + dbt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="400" y="195" width="140" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell value="BI (Superset)" style="edgeStyle=none;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="g" target="superset">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="superset" value="Дашборды&#xa;и ML" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="400" y="335" width="140" height="50" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

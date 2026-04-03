@@ -1,0 +1,21 @@
+# Данные PostgreSQL (исключаем бинарные файлы)
+module_G/airflow-postgres-data/
+psql-data/
+*.dump
+
+# Python
+__pycache__/
+*.pyc
+.env
+venv/
+env/
+
+# Airflow
+logs/
+airflow.cfg
+airflow.db
+webserver_config.py
+
+# Docker volumes (только для локального запуска)
+minio_data/
+clickhouse_data/

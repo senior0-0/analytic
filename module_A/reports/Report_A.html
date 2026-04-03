@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Отчёт модуля А – Архитектура данных</title>
+    <style>
+        body {font-size: 14pt;}
+        th, td { border: 1px solid #ddd; font-size: 14pt; }
+    </style>
+</head>
+<body>
+<h1>Отчёт по модулю А</h1>
+    <h2>Проектирование и разработка архитектуры инфраструктуры данных</h2>
+
+    <h2>1. Анализ требований</h2>
+            <p>Проанализированы требования конкурсного задания: единая версия правды, производительность отчётности, историчность 180 дней, автоматизация, расширяемость. Выделены ключевые бизнес-вопросы (загруженность, прогноз, структура потока, опасные сближения, рекомендации).</p>
+
+    <h2>2. Архитектурное видение и выбор технологий</h2>
+            <p><strong>Подход:</strong> гибридный (Data Vault + Kimball).</p>
+            <p><strong>Слои:</strong> Raw (MinIO+Parquet), Staging (ClickHouse временные), Integration (Data Vault в ClickHouse), Mart (витрины в ClickHouse).</p>
+            <p><strong>Технологический стек:</strong> ClickHouse, MinIO, Airflow, Kafka, Spark Streaming, dbt, Superset, MLflow.</p>
+
+    <h2>3. Модели данных</h2>
+        <h3>3.1 Концептуальная ER-диаграмма</h3>
+            <p>Сущности: Камера, Детекция, Тип ТС, Участок дороги, Погода, ДТП. Связи: камера->детекция, детекция->участок.</p>
+        <h3>3.2 Физическая модель (ClickHouse)</h3>
+            <p>Созданы таблицы для сырых данных, Data Vault (хабы, линки, сателлиты) и витрин. Полный DDL-скрипт в <code>docs/data_model_physical.sql</code>.</p>
+        <h3>3.3 Витрины данных (7 штук)</h3>
+            <p>Паспорта витрин – в <code>docs/mart_specifications.md</code>. Краткий перечень:</p>
+
+        <ul>
+            <li>mart_current_congestion – текущая загруженность (1 мин)</li>
+            <li>mart_forecast – прогноз 30/60/120 мин (5 мин)</li>
+            <li>mart_historical_trends – сравнение с прошлым (15 мин)</li>
+            <li>mart_flow_structure – структура потока (5 мин)</li>
+            <li>mart_heavy_truck_hours – большегрузы в часы пик (Каждый час)</li>
+            <li>mart_dangerous_proximity – опасные сближения (1 мин)</li>
+            <li>mart_prescriptive_actions – рекомендации (10 мин)</li>
+        </ul>
+
+    <h2>4. Соответствие требованиям</h2>
+        <table>
+            <tr><th>Требование</th><th>Реализация</th></tr>
+            <tr><td>Единая версия правды</td><td>Одно центральное DWH (ClickHouse)</td></tr>
+            <tr><td>Быстрые дашборды</td><td>Колоночное хранение, партиционирование, витрины</td></tr>
+            <tr><td>История 180 дней</td><td>TTL в ClickHouse, сателлиты Data Vault</td></tr>
+            <tr><td>Автоматизация</td><td>Airflow DAG, потоковая обработка Kafka+Spark</td></tr>
+            <tr><td>Расширяемость</td><td>Data Vault, добавление новых источников без изменения витрин</td></tr>
+        </table>
+</body>
+</html>
